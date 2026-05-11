@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>联系我们 | A股财务指标</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #f5f7fa;
+            --card-bg: #ffffff;
+            --text: #1a1a2e;
+            --text-secondary: #666;
+            --accent: #dc3545;
+            --accent-hover: #c82333;
+            --border: #e8ecf1;
+            --header-bg: #1a1a2e;
+            --header-text: #ffffff;
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
+        .dark-mode {
+            --bg: #0f0f1a;
+            --card-bg: #1a1a2e;
+            --text: #e0e0e0;
+            --text-secondary: #a0a0b0;
+            --border: #2a2a3e;
+            --shadow: 0 2px 12px rgba(0,0,0,0.3);
+            --header-bg: #0d0d1a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .header {
+            background: var(--header-bg);
+            color: var(--header-text);
+            padding: 0;
+        }
+
+        .header-top {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-left h1 {
+            font-size: 1.4em;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .header-left p {
+            font-size: 0.85em;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-right a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .header-right a:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .header-right a.active {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+        }
+
+        .dark-toggle {
+            cursor: pointer;
+            padding: 8px 14px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: transparent;
+            color: #fff;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .dark-toggle:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 30px;
+        }
+
+        .page-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 36px;
+            font-size: 0.95em;
+        }
+
+        .contact-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+        }
+
+        .contact-card:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .contact-card h3 {
+            font-size: 1.1em;
+            margin-bottom: 6px;
+            color: var(--accent);
+        }
+
+        .contact-card p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: 0.95em;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .contact-item:last-child {
+            border-bottom: none;
+        }
+
+        .contact-icon {
+            font-size: 1.6em;
+            min-width: 40px;
+            text-align: center;
+            margin-top: 2px;
+        }
+
+        .contact-info {
+            flex: 1;
+        }
+
+        .contact-info .label {
+            font-weight: 600;
+            font-size: 0.95em;
+            margin-bottom: 4px;
+        }
+
+        .contact-info .value {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .contact-info a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-secondary);
+            font-size: 0.85em;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-top">
+        <div class="header-left">
+            <h1>✉️ 联系我们</h1>
+            <p>A股财务指标 · 意见反馈与技术支持</p>
+        </div>
+        <div class="header-right">
+            <a href="index.html">🏠 首页</a>
+            <a href="archive.html">📦 历史</a>
+            <a href="contact.html" class="active">✉️ 联系</a>
+            <button class="dark-toggle" onclick="toggleDarkMode()">🌙 深色</button>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="page-title">📬 联系方式</div>
+    <div class="page-subtitle">如有问题、建议或合作意向，欢迎通过以下方式与我们取得联系</div>
+
+    <div class="contact-card">
+        <div class="contact-item">
+            <div class="contact-icon">📧</div>
+            <div class="contact-info">
+                <div class="label">电子邮箱</div>
+                <div class="value">
+                    <a href="mailto:ywwei2000@gmail.com">ywwei2000@gmail.com</a>
+                    <br>工作日 24 小时内回复
+                </div>
+            </div>
+        </div>
+
+        <div class="contact-item">
+            <div class="contact-icon">💬</div>
+            <div class="contact-info">
+                <div class="label">意见反馈</div>
+                <div class="value">
+                    如果您发现数据错误、功能异常或有改进建议，请发送邮件详细描述问题，我们会及时处理。
+                </div>
+            </div>
+        </div>
+
+        <div class="contact-item">
+            <div class="contact-icon">🔗</div>
+            <div class="contact-info">
+                <div class="label">项目地址</div>
+                <div class="value">
+                    <a href="https://github.com/yww007/equity" target="_blank">github.com/yww007/equity</a>
+                    <br>欢迎 Star 和 Fork，共同完善项目
+                </div>
+            </div>
+        </div>
+
+        <div class="contact-item">
+            <div class="contact-icon">📊</div>
+            <div class="contact-info">
+                <div class="label">数据说明</div>
+                <div class="value">
+                    所有数据来源于公开市场信息，仅供个人学习和研究参考，不构成任何投资建议。数据可能存在延迟，请以官方披露为准。
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="contact-card">
+        <h3>📝 提交反馈</h3>
+        <p style="margin-top:8px;">
+            您也可以直接点击下方按钮，通过邮件快速提交反馈。请在邮件中注明：
+        </p>
+        <ul style="margin:12px 0 0 20px;color:var(--text-secondary);line-height:1.8;font-size:0.93em;">
+            <li>📌 问题描述（附截图更佳）</li>
+            <li>🖥️ 使用的浏览器及版本</li>
+            <li>📅 出现问题的日期和时间</li>
+        </ul>
+        <div style="margin-top:18px;">
+            <a href="mailto:ywwei2000@gmail.com?subject=A股财务指标%20-%20意见反馈" style="display:inline-block;background:var(--accent);color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:0.95em;transition:background 0.2s;" onmouseover="this.style.background='var(--accent-hover)'" onmouseout="this.style.background='var(--accent)'">✉️ 发送反馈邮件</a>
+        </div>
+    </div>
+</div>
+
+<div class="footer">
+    <p>数据来源：公开市场数据 · 仅供参考，不构成投资建议</p>
+    <p style="margin-top:6px;font-size:0.85em;opacity:0.6;">Powered by GitHub Pages · 每日自动归档</p>
+</div>
+
+<script>
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    const btn = document.querySelector('.dark-toggle');
+    btn.textContent = document.body.classList.contains('dark-mode') ? '☀️ 浅色' : '🌙 深色';
+    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+}
+
+if (localStorage.getItem('darkMode') === 'true') {
+    document.body.classList.add('dark-mode');
+    const btn = document.querySelector('.dark-toggle');
+    if (btn) btn.textContent = '☀️ 浅色';
+}
+</script>
+
+</body>
+</html>
