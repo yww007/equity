@@ -185,6 +185,16 @@
             transform: translateY(-2px);
         }
 
+        .homepage-card {
+            background: linear-gradient(135deg, var(--card-bg), var(--accent) 300%);
+            border-color: var(--accent);
+            border-width: 2px;
+        }
+
+        .homepage-card:hover {
+            background: linear-gradient(135deg, var(--card-bg), var(--accent) 250%);
+        }
+
         .archive-card .date {
             font-size: 1em;
             font-weight: 600;
@@ -308,6 +318,23 @@ async function loadArchives() {
 
         // 渲染
         let html = '';
+
+        // 首页模块（历史前面）
+        const latestEntry = archives.reduce((a, b) => a.date > b.date ? a : b);
+        html += `
+            <div class="year-group">
+                <div class="year-title" style="color:var(--text);border-bottom-color:var(--accent);">🏠 首页 · 最新数据</div>
+                <div class="archive-grid">
+                    <a class="archive-card homepage-card" href="index.html">
+                        <div class="date" style="font-size:1.2em;font-weight:700;">📊 当前排名</div>
+                        <div class="meta">🏢 ${latestEntry.total} 家公司</div>
+                        <div class="meta">🕐 ${latestEntry.date}</div>
+                        <div class="meta" style="opacity:0.6;font-size:0.85em;">点击查看完整排名 →</div>
+                    </a>
+                </div>
+            </div>
+        `;
+
         const years = Object.keys(yearMap).sort((a, b) => b - a); // 倒序
         for (const year of years) {
             html += `<div class="year-group"><div class="year-title">📆 ${year} 年</div><div class="archive-grid">`;
