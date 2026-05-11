@@ -160,6 +160,23 @@ def fetch_data_real():
             except Exception:
                 cashflow = 0
 
+            # 净利润增长率 & 营业收入增长率（YoY，取利润表最新两期对比）
+            try:
+                profit_data = ak.stock_financial_report_sina(stock=full_code, symbol="利润表")
+                if profit_data is not None and len(profit_data) >= 2:
+                    latest = profit_data.iloc[0]
+                    prev = profit_data.iloc[1]
+                    net_profit_now = float(latest.get("净利润", 0))
+                    net_profit_prev = float(prev.get("净利润", 0))
+                    revenue_now = float(latest.get("营业收入", 0))
+                    revenue_prev = float(prev.get("营业收入", 0))
+                    net_profit_growth = round((net_profit_now - net_profit_prev) / abs(net_profit_prev) * 100, 1) if net_profit_prev != 0 else 0
+                    revenue_growth = round((revenue_now - revenue_prev) / abs(revenue_prev) * 100, 1) if revenue_prev != 0 else 0
+                else:
+                    net_profit_growth, revenue_growth = 0, 0
+            except Exception:
+                net_profit_growth, revenue_growth = 0, 0
+
             # PEG 估算
             peg = round(pe / roe * 100, 2) if roe > 0 and pe > 0 else 0
 
@@ -179,10 +196,12 @@ def fetch_data_real():
                 "net_margin": round(net_margin_pct, 1),
                 "debt_ratio": round(debt_ratio, 1),
                 "cashflow": cashflow,
+                "net_profit_growth": round(net_profit_growth, 1),
+                "revenue_growth": round(revenue_growth, 1),
                 "industry": industry,
             })
 
-            print(f"✅ PE={pe:.1f} ROE={roe:.1f}%")
+            print(f"✅ PE={pe:.1f} ROE={roe:.1f}% 净利润增长={net_profit_growth:.1f}%")
 
             # 避免请求过快被封
             time.sleep(0.5)
