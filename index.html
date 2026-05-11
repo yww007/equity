@@ -197,6 +197,11 @@
             background: rgba(255,255,255,0.08);
         }
 
+        thead th[title] {
+            cursor: help;
+            border-bottom: 1px dashed rgba(255,255,255,0.15);
+        }
+
         thead th .sort-icon {
             display: inline-block;
             margin-left: 4px;
@@ -377,16 +382,16 @@
                 <tr>
                     <th>排名 <span class="sort-icon">↕</span></th>
                     <th style="text-align:left;padding-left:16px;">公司名称 <span class="sort-icon">↕</span></th>
-                    <th>市盈率<br><small>PE</small></th>
-                    <th>市净率<br><small>PB</small></th>
-                    <th>PEG</th>
-                    <th>ROE<br><small>净资产收益率</small></th>
-                    <th>毛利率</th>
-                    <th>净利率</th>
-                    <th>资产负债率</th>
-                    <th>经营活动现金流<br><small>亿元</small></th>
-                    <th>净利润增长率<br><small>%</small></th>
-                    <th>营业收入增长率<br><small>%</small></th>
+                    <th title="股价 ÷ 每股收益（EPS），反映投资者愿意为每元净利润支付多少价格。PE越低，回本周期越短，但需结合行业与增长预期判断。">市盈率<br><small>PE</small></th>
+                    <th title="股价 ÷ 每股净资产，衡量股价相对于公司账面资产的溢价水平。PB&lt;1（破净）常被视为资产价值被低估，适用于银行、重资产行业。">市净率<br><small>PB</small></th>
+                    <th title="PE ÷ 净利润增长率，综合估值与成长性，PEG&lt;1通常代表高性价比标的。">PEG</th>
+                    <th title="净利润 ÷ 净资产，衡量股东投入资本的回报效率。巴菲特最重视此指标，持续高于15%的企业具备长期投资价值。">ROE<br><small>净资产收益率</small></th>
+                    <th title="（营业收入 - 营业成本）÷ 营业收入，反映产品或服务的初始盈利能力，高毛利率代表强定价权与竞争壁垒。">毛利率</th>
+                    <th title="净利润 ÷ 营业收入，体现扣除全部费用后的真实盈利水平，是检验"利润质量"的核心指标。">净利率</th>
+                    <th title="总负债 ÷ 总资产，衡量企业杠杆水平。一般低于50%较安全，但金融、地产等行业可适度放宽。">资产负债率</th>
+                    <th title="直接反映主营业务实际回笼的现金，比净利润更难操纵，是判断"真赚钱"还是"纸面盈利"的黄金标准。">经营活动现金流<br><small>亿元</small></th>
+                    <th title="（当期净利润 - 上期净利润）÷ 上期净利润，体现企业利润扩张速度，连续三年高于15%为优质成长股标志。">净利润增长率<br><small>%</small></th>
+                    <th title="（当期营收 - 上期营收）÷ 上期营收，反映业务规模扩张能力，需与净利润增长协同分析，避免"增收不增利"。">营业收入增长率<br><small>%</small></th>
                     <th>行业</th>
                 </tr>
             </thead>
