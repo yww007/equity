@@ -238,7 +238,7 @@ def fetch_data_sample():
 
 
 def save_data(data):
-    """保存数据到 JSON 文件"""
+    """保存数据到 JSON 文件并归档每日快照"""
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     # 尝试读取行业信息，如果已有则保留
@@ -258,20 +258,53 @@ def save_data(data):
         if item.get("code") in existing and (not item.get("industry") or item["industry"] == "其他"):
             item["industry"] = existing[item["code"]]
 
+    today = datetime.now().strftime("%Y-%m-%d")
     output = {
         "meta": {
             "update_time": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "data_date": datetime.now().strftime("%Y-%m-%d"),
+            "data_date": today,
             "source": "akshare 公开数据",
             "total": len(data),
         },
         "data": data,
     }
 
+    # 保存到 stocks.json（当前数据）
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
-
     print(f"\n💾 已保存: {OUTPUT_FILE} ({len(data)} 条)")
+
+    # 归档每日快照
+    archive_dir = os.path.join(OUTPUT_DIR, "archive")
+    os.makedirs(archive_dir, exist_ok=True)
+    archive_file = os.path.join(archive_dir, f"{today}.json")
+    with open(archive_file, "w", encoding="utf-8") as f:
+        json.dump(output, f, ensure_ascii=False, indent=2)
+    print(f"📦 已归档: {archive_file}")
+
+    # 更新归档索引 archive/index.json
+    archive_index = []
+    if os.path.exists(os.path.join(archive_dir, "index.json")):
+        try:
+            with open(os.path.join(archive_dir, "index.json"), "r", encoding="utf-8") as f:
+                archive_index = json.load(f)
+        except Exception:
+            pass
+
+    # 合并去重（按日期去重）
+    date_set = {entry["date"] for entry in archive_index if "date" in entry}
+    if today not in date_set:
+        archive_index.append({
+            "date": today,
+            "total": len(data),
+            "file": f"{today}.json",
+        })
+        archive_index.sort(key=lambda x: x["date"], reverse=True)
+
+    with open(os.path.join(archive_dir, "index.json"), "w", encoding="utf-8") as f:
+        json.dump(archive_index, f, ensure_ascii=False, indent=2)
+    print(f"📋 归档索引已更新 ({len(archive_index)} 个存档日)")
+
     return output
 
 

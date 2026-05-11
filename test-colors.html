@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>颜色测试</title>
+<style>
+    td.cell-top-1 { background-color: #FFD700; }
+    td.cell-top-2 { background-color: #C0C0C0; }
+    td.cell-top-3 { background-color: #CD7F32; }
+    td.name-top-1 { background-color: #FFD700; }
+    td.name-top-2 { background-color: #C0C0C0; }
+    td.name-top-3 { background-color: #CD7F32; }
+    table { border-collapse: collapse; width: 100%; }
+    td, th { border: 1px solid #ccc; padding: 8px 12px; text-align: center; }
+    th { background: #333; color: white; }
+    /* 测试内联样式 */
+    .inline-test { background: #FFD700 !important; }
+</style>
+</head>
+<body>
+<h2>CSS Class 测试</h2>
+<table>
+    <tr>
+        <th>排名</th>
+        <th>公司名称</th>
+        <th>PE</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td class="name-top-1">贵州茅台 <span>600519.SH</span></td>
+        <td class="cell-top-1">28.6</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td class="name-top-2">五粮液 <span>000858.SZ</span></td>
+        <td class="cell-top-2">18.2</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td class="name-top-3">招商银行 <span>600036.SH</span></td>
+        <td class="cell-top-3">5.6</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>中国平安 <span>601318.SH</span></td>
+        <td>8.9</td>
+    </tr>
+</table>
+
+<h2>内联样式测试</h2>
+<table>
+    <tr>
+        <th>排名</th>
+        <th>公司名称</th>
+        <th>PE</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td style="background:#FFD700">贵州茅台 <span>600519.SH</span></td>
+        <td style="background:#FFD700">28.6</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td style="background:#C0C0C0">五粮液 <span>000858.SZ</span></td>
+        <td style="background:#C0C0C0">18.2</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td style="background:#CD7F32">招商银行 <span>600036.SH</span></td>
+        <td style="background:#CD7F32">5.6</td>
+    </tr>
+</table>
+
+<p>如果你能看到上表有金色/银色/铜色背景，说明CSS和浏览器本身没问题</p>
+<p>如果看到的是白色背景（只有文字），说明浏览器或CSS被拦截了</p>
+</body>
+</html>

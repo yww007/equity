@@ -81,7 +81,21 @@
         .header-right {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
+        }
+
+        .header-right a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .header-right a:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
         }
 
         .dark-toggle {
@@ -257,6 +271,22 @@
         .rank-2 { color: #a8a8a8; }
         .rank-3 { color: #cd7f32; }
 
+        /* 参数列前三名底色 */
+        td.cell-top-1 { background-color: #FFD700; }
+        td.cell-top-2 { background-color: #C0C0C0; }
+        td.cell-top-3 { background-color: #CD7F32; }
+        body.dark-mode td.cell-top-1 { background-color: #5a4400; }
+        body.dark-mode td.cell-top-2 { background-color: #4a4a4a; }
+        body.dark-mode td.cell-top-3 { background-color: #5a2a10; }
+
+        /* 综合排名前三公司名底色 */
+        td.name-top-1 { background-color: #FFD700; }
+        td.name-top-2 { background-color: #C0C0C0; }
+        td.name-top-3 { background-color: #CD7F32; }
+        body.dark-mode td.name-top-1 { background-color: #5a4400; }
+        body.dark-mode td.name-top-2 { background-color: #4a4a4a; }
+        body.dark-mode td.name-top-3 { background-color: #5a2a10; }
+
         .stock-code {
             font-size: 0.8em;
             color: var(--text-secondary);
@@ -340,6 +370,8 @@
             <div id="updateTime" class="update-time">加载中...</div>
         </div>
         <div class="header-right">
+            <a href="archive.html">📦 历史</a>
+            <a href="mailto:ywwei2000@gmail.com">✉️ 联系</a>
             <button class="dark-toggle" onclick="toggleDarkMode()">🌙 深色</button>
         </div>
     </div>
@@ -983,13 +1015,63 @@ function sortData(data, key, asc) {
     });
 }
 
-// ===== 渲染表格 =====
+// ===== 渲染表格（含金银铜标记 + 综合排名徽章）=====
 function renderTable(data) {
     const tbody = document.getElementById('tableBody');
     if (!data || data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--text-secondary);">暂无数据</td></tr>';
         return;
     }
+
+    // 参数定义: [key, 列索引(从0开始), lowIsGood]
+    const params = [
+        { key: 'pe', col: 2, low: true },
+        { key: 'pb', col: 3, low: true },
+        { key: 'peg', col: 4, low: true },
+        { key: 'roe', col: 5, low: false },
+        { key: 'gross_margin', col: 6, low: false },
+        { key: 'net_margin', col: 7, low: false },
+        { key: 'debt_ratio', col: 8, low: true },
+        { key: 'cashflow', col: 9, low: false },
+        { key: 'net_profit_growth', col: 10, low: false },
+        { key: 'revenue_growth', col: 11, low: false },
+    ];
+
+    // 计算每列前三名（取 code 作为唯一标识）
+    const top3ByCol = {};
+    params.forEach(p => {
+        const sorted = [...data].sort((a, b) => {
+            const va = a[p.key] ?? 0;
+            const vb = b[p.key] ?? 0;
+            return p.low ? va - vb : vb - va;
+        });
+        const top3 = {};
+        sorted.slice(0, 3).forEach((item, i) => {
+            top3[item.code] = 'cell-top-' + (i + 1);
+        });
+        top3ByCol[p.key] = top3;
+    });
+
+    // 计算综合排名（每个参数排名求和，升序排）
+    const rankSums = {};
+    data.forEach(item => {
+        let sum = 0;
+        params.forEach(p => {
+            const sorted = [...data].sort((a, b) => {
+                const va = a[p.key] ?? 0;
+                const vb = b[p.key] ?? 0;
+                return p.low ? va - vb : vb - va;
+            });
+            const pos = sorted.findIndex(x => x.code === item.code) + 1;
+            sum += pos;
+        });
+        rankSums[item.code] = sum;
+    });
+    const overallSorted = [...data].sort((a, b) => rankSums[a.code] - rankSums[b.code]);
+    const overallTop3 = {};
+    overallSorted.slice(0, 3).forEach((item, i) => {
+        overallTop3[item.code] = 'name-top-' + (i + 1);
+    });
 
     tbody.innerHTML = data.map((item, idx) => {
         const rank = idx + 1;
@@ -999,24 +1081,24 @@ function renderTable(data) {
         else if (rank === 3) rankClass = 'rank-3';
 
         const exchangeTag = exchangeMap[item.exchange] || '';
+        const cellText = (p) => {
+            const val = p.key === 'cashflow' ? fmtCashflow(item[p.key]) : fmtNum(item[p.key]) + (['roe','gross_margin','net_margin','debt_ratio','net_profit_growth','revenue_growth'].includes(p.key) ? '%' : '');
+            const topIdx = top3ByCol[p.key] ? top3ByCol[p.key][item.code] : null;
+            const cls = topIdx ? ' class="' + topIdx + '"' : '';
+            return `<td${cls}>${val}</td>`;
+        };
+
+        const nameTopClass = overallTop3[item.code] || '';
+        const nameStyle = 'text-align:left;padding-left:16px;';
 
         return `<tr>
             <td><span class="rank ${rankClass}">${rank}</span></td>
-            <td style="text-align:left;padding-left:16px;">
+            <td style="${nameStyle}"${nameTopClass ? ' class="'+nameTopClass+'"' : ''}>
                 ${item.name}
                 <span class="stock-code">${item.code}</span>
                 ${exchangeTag}
             </td>
-            <td>${fmtNum(item.pe)}</td>
-            <td>${fmtNum(item.pb)}</td>
-            <td>${fmtNum(item.peg)}</td>
-            <td>${fmtNum(item.roe)}%</td>
-            <td>${fmtNum(item.gross_margin)}%</td>
-            <td>${fmtNum(item.net_margin)}%</td>
-            <td>${fmtNum(item.debt_ratio)}%</td>
-            <td>${fmtCashflow(item.cashflow)}</td>
-            <td>${fmtNum(item.net_profit_growth)}%</td>
-            <td>${fmtNum(item.revenue_growth)}%</td>
+            ${params.map(p => cellText(p)).join('')}
             <td style="font-size:0.85em;color:var(--text-secondary);">${item.industry || '-'}</td>
         </tr>`;
     }).join('');
@@ -1051,6 +1133,7 @@ function toggleDarkMode() {
     const isDark = document.body.classList.contains('dark-mode');
     btn.textContent = isDark ? '☀️ 亮色' : '🌙 深色';
     localStorage.setItem('equityDarkMode', isDark);
+    filterTable(); // 重新渲染以更新内联底色
 }
 
 // ===== 加载数据 =====
@@ -1060,16 +1143,31 @@ async function loadData() {
     const tableEl = document.getElementById('dataTable');
     const errorEl = document.getElementById('errorMsg');
 
+    // 检查 URL 参数 ?date=YYYY-MM-DD（历史存档）
+    const params = new URLSearchParams(window.location.search);
+    const archiveDate = params.get('date');
+
     try {
+        let dataUrl, isArchive = false;
+        if (archiveDate) {
+            dataUrl = 'data/archive/' + archiveDate + '.json?_=' + Date.now();
+            isArchive = true;
+        } else {
+            dataUrl = 'data/stocks.json?_=' + Date.now();
+        }
+
         // 尝试加载外部 JSON
-        const resp = await fetch('data/stocks.json?_=' + Date.now());
+        const resp = await fetch(dataUrl);
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const json = await resp.json();
         stockData = json.data || json;
         const meta = json.meta || {};
 
-        // 更新时间
-        if (meta.update_time) {
+        // 更新时间（历史存档显示特殊标识）
+        if (isArchive) {
+            updateEl.textContent = '📦 历史快照: ' + (meta.data_date || archiveDate);
+            document.title = '📦 ' + (meta.data_date || archiveDate) + ' A股财务指标排名';
+        } else if (meta.update_time) {
             updateEl.textContent = '数据更新于: ' + meta.update_time;
         } else {
             updateEl.textContent = '数据更新于: ' + new Date().toLocaleDateString('zh-CN');

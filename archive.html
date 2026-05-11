@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史数据存档 | A股财务指标</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #f5f7fa;
+            --card-bg: #ffffff;
+            --text: #1a1a2e;
+            --text-secondary: #666;
+            --accent: #dc3545;
+            --accent-hover: #c82333;
+            --border: #e8ecf1;
+            --header-bg: #1a1a2e;
+            --header-text: #ffffff;
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
+        .dark-mode {
+            --bg: #0f0f1a;
+            --card-bg: #1a1a2e;
+            --text: #e0e0e0;
+            --text-secondary: #a0a0b0;
+            --border: #2a2a3e;
+            --shadow: 0 2px 12px rgba(0,0,0,0.3);
+            --header-bg: #0d0d1a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .header {
+            background: var(--header-bg);
+            color: var(--header-text);
+            padding: 0;
+        }
+
+        .header-top {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-left h1 {
+            font-size: 1.4em;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .header-left p {
+            font-size: 0.85em;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-right a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .header-right a:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .dark-toggle {
+            cursor: pointer;
+            padding: 8px 14px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: transparent;
+            color: #fff;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .dark-toggle:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .page-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .loading .spinner {
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-msg {
+            text-align: center;
+            padding: 40px;
+            color: var(--accent);
+        }
+
+        /* 按年份分组 */
+        .year-group {
+            margin-bottom: 36px;
+        }
+
+        .year-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .archive-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .archive-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            text-decoration: none;
+            color: var(--text);
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .archive-card:hover {
+            border-color: var(--accent);
+            box-shadow: var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        .archive-card .date {
+            font-size: 1em;
+            font-weight: 600;
+        }
+
+        .archive-card .date .day {
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        .archive-card .meta {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state .icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-secondary);
+            font-size: 0.85em;
+        }
+
+        @media (max-width: 600px) {
+            .header-top { padding: 16px; }
+            .container { padding: 16px; }
+            .archive-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-top">
+        <div class="header-left">
+            <h1>📦 历史数据存档</h1>
+            <p>A股财务指标每日快照</p>
+        </div>
+        <div class="header-right">
+            <a href="index.html">🏠 首页</a>
+            <a href="mailto:ywwei2000@gmail.com">✉️ 联系</a>
+            <button class="dark-toggle" onclick="toggleDarkMode()">🌙 深色</button>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="page-title">📅 数据归档</div>
+    <div class="page-subtitle">选择日期查看当日 A 股核心财务指标快照</div>
+
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>正在加载存档列表...</p>
+    </div>
+    <div id="errorMsg" class="error-msg" style="display:none"></div>
+    <div id="archiveContent" style="display:none"></div>
+</div>
+
+<div class="footer">
+    <p>数据来源：公开市场数据 · 仅供参考，不构成投资建议</p>
+    <p style="margin-top:6px;font-size:0.85em;opacity:0.6;">Powered by GitHub Pages · 每日自动归档</p>
+</div>
+
+<script>
+// ===== 深色模式 =====
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    const btn = document.querySelector('.dark-toggle');
+    btn.textContent = document.body.classList.contains('dark-mode') ? '☀️ 浅色' : '🌙 深色';
+    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+}
+
+if (localStorage.getItem('darkMode') === 'true') {
+    document.body.classList.add('dark-mode');
+    const btn = document.querySelector('.dark-toggle');
+    if (btn) btn.textContent = '☀️ 浅色';
+}
+
+// ===== 加载归档索引 =====
+async function loadArchives() {
+    const loading = document.getElementById('loading');
+    const errorMsg = document.getElementById('errorMsg');
+    const content = document.getElementById('archiveContent');
+
+    try {
+        const resp = await fetch('data/archive/index.json');
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const archives = await resp.json();
+
+        loading.style.display = 'none';
+
+        if (!archives || archives.length === 0) {
+            content.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📭</div>
+                    <h3>暂无存档数据</h3>
+                    <p>数据将在首次运行抓取脚本后自动生成</p>
+                </div>
+            `;
+            content.style.display = 'block';
+            return;
+        }
+
+        // 按年份分组
+        const yearMap = {};
+        for (const entry of archives) {
+            const year = entry.date.substring(0, 4);
+            if (!yearMap[year]) yearMap[year] = [];
+            yearMap[year].push(entry);
+        }
+
+        // 渲染
+        let html = '';
+        const years = Object.keys(yearMap).sort((a, b) => b - a); // 倒序
+        for (const year of years) {
+            html += `<div class="year-group"><div class="year-title">📆 ${year} 年</div><div class="archive-grid">`;
+            const entries = yearMap[year];
+            for (const entry of entries) {
+                // 解析日期
+                const parts = entry.date.split('-');
+                const month = parseInt(parts[1]);
+                const day = parseInt(parts[2]);
+                html += `
+                    <a class="archive-card" href="index.html?date=${entry.date}">
+                        <div class="date">
+                            <span class="day">${month}/${day}</span>
+                        </div>
+                        <div class="meta">📊 ${entry.total} 家公司</div>
+                        <div class="meta">🕐 ${entry.date}</div>
+                    </a>
+                `;
+            }
+            html += `</div></div>`;
+        }
+
+        content.innerHTML = html;
+        content.style.display = 'block';
+
+    } catch (e) {
+        loading.style.display = 'none';
+        errorMsg.style.display = 'block';
+        if (e.message.includes('404')) {
+            errorMsg.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📭</div>
+                    <h3>暂无存档数据</h3>
+                    <p>数据将在首次运行抓取脚本后自动生成<br>
+                    <small style="opacity:0.6;">等待每日自动归档，或手动运行 <code>python fetch_stocks.py</code></small></p>
+                </div>
+            `;
+        } else {
+            errorMsg.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">⚠️</div>
+                    <h3>加载失败</h3>
+                    <p>${e.message}</p>
+                </div>
+            `;
+        }
+    }
+}
+
+loadArchives();
+</script>
+
+</body>
+</html>
