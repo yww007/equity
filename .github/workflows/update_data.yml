@@ -2,8 +2,8 @@ name: 更新股票数据
 
 on:
   schedule:
-    # 北京时间每天 14:00（UTC 6:00）盘后更新
-    - cron: '0 6 * * 1-5'
+    # 北京时间每天 12:00（UTC 4:00），提前运行以应对 GitHub Actions 队列延迟
+    - cron: '0 4 * * 1-5'
   workflow_dispatch:  # 支持手动触发
 
 permissions:

@@ -75,7 +75,7 @@ def get_exchange(code):
 
 
 def fetch_data_real():
-    """使用 akshare 抓取真实数据"""
+    """使用 akshare 东方财富(EM)接口获取真实数据"""
     try:
         import akshare as ak
         import pandas as pd
@@ -86,7 +86,55 @@ def fetch_data_real():
     results = []
     errors = []
 
-    print(f"📡 开始抓取 {len(STOCKS)} 只股票的数据...")
+    # 自动选择最新报告期
+    today = datetime.now()
+    y = today.year
+    m = today.month
+    if m >= 10:
+        date_str = f"{y}0930"
+    elif m >= 7:
+        date_str = f"{y}0630"
+    elif m >= 4:
+        date_str = f"{y}0331"
+    else:
+        date_str = f"{y - 1}1231"
+
+    print(f"📡 获取最新报告期({date_str})财务数据...")
+    print("-" * 50)
+
+    # 批量获取所有股票的财报数据（一次请求）
+    try:
+        yjbb = ak.stock_yjbb_em(date=date_str)
+        # 如果为空则尝试前一报告期
+        if yjbb.empty:
+            fallback = {"10": "0630", "7": "0331", "4": f"{y-1}1231", "1": f"{y-1}0930"}
+            fb_key = str(m)
+            if fb_key in fallback:
+                fb_date = fallback[fb_key]
+            else:
+                fb_date = f"{y-1}1231"
+            if not fb_date.startswith(str(y)):
+                fb_date = f"{y-1}1231"
+            print(f"⚠ 报告期 {date_str} 无数据，尝试 {fb_date}")
+            yjbb = ak.stock_yjbb_em(date=fb_date)
+        print(f"✅ 获取到 {len(yjbb)} 只股票的财报数据")
+    except Exception as e:
+        print(f"❌ 获取财报失败: {e}")
+        return []
+
+    # 批量获取所有股票实时行情（新浪接口），建立 code→price 映射
+    print("📡 获取实时行情...")
+    try:
+        spot_df = ak.stock_zh_a_spot()
+        # 新浪接口返回代码带 sh/sz/bj 前缀，去掉前缀以便匹配 STOCKS
+        spot_df['_code'] = spot_df['代码'].str.replace(r'^(sh|sz|bj)', '', regex=True)
+        price_map = dict(zip(spot_df['_code'], spot_df['最新价']))
+        print(f"✅ 获取到 {len(price_map)} 只股票的实时行情")
+    except Exception as e:
+        print(f"❌ 获取实时行情失败: {e}")
+        price_map = {}
+
+    print(f"📡 开始整合 {len(STOCKS)} 只股票的数据...")
     print("-" * 50)
 
     for idx, (code, name) in enumerate(STOCKS, 1):
@@ -96,106 +144,48 @@ def fetch_data_real():
 
             print(f"  [{idx}/{len(STOCKS)}] {name} ({full_code}) ... ", end="", flush=True)
 
-            # 获取实时行情
-            try:
-                realtime = ak.stock_zh_a_spot_em()
-                realtime_filtered = realtime[realtime["代码"] == code]
-                if realtime_filtered.empty:
-                    print("⚠ 无行情数据")
-                    continue
-                row = realtime_filtered.iloc[0]
-                price = float(row.get("最新价", 0))
-            except Exception:
-                price = 0
+            # 从 yjbb 中找到该股票的财务数据
+            stock_fin = yjbb[yjbb['股票代码'] == code]
+            if stock_fin.empty:
+                print("⚠ 无财务数据")
+                continue
 
-            # 获取财务指标
-            try:
-                financial = ak.stock_financial_abstract_ths(symbol=full_code)
-                fin_data = financial.iloc[0] if not financial.empty else {}
-                pe = float(fin_data.get("市盈率", 0) if pd.notna(fin_data.get("市盈率", 0)) else 0)
-                pb = float(fin_data.get("市净率", 0) if pd.notna(fin_data.get("市净率", 0)) else 0)
-            except Exception:
-                pe, pb = 0, 0
+            fin_row = stock_fin.iloc[0]
 
-            # 获取详细财务数据（利润表）
-            try:
-                # 净资产收益率、毛利率、净利率等
-                profit = ak.stock_financial_report_sina(stock=full_code, symbol="利润表")
-                if not profit.empty:
-                    # 取最新一期数据
-                    latest = profit.iloc[0]
-                    gross_margin = float(latest.get("营业收入", 0))
-                    net_margin_val = float(latest.get("净利润", 0))
-                    revenue = float(latest.get("营业收入", 0))
-                    gross_margin_pct = round(gross_margin / revenue * 100, 1) if revenue else 0
-                    net_margin_pct = round(net_margin_val / revenue * 100, 1) if revenue else 0
-                else:
-                    gross_margin_pct, net_margin_pct = 0, 0
-            except Exception:
-                gross_margin_pct, net_margin_pct = 0, 0
+            # 从 price_map 获取最新价
+            price = price_map.get(code, 0)
+            industry = fin_row.get("所处行业", "其他")
 
-            # ROE
-            try:
-                balance = ak.stock_financial_report_sina(stock=full_code, symbol="资产负债表")
-                if not balance.empty:
-                    latest_bal = balance.iloc[0]
-                    equity = float(latest_bal.get("股东权益合计", 0))
-                    roe = round(net_margin_val / equity * 100, 1) if equity else 0
-                    debt = float(latest_bal.get("负债合计", 0))
-                    assets = float(latest_bal.get("资产总计", 0))
-                    debt_ratio = round(debt / assets * 100, 1) if assets else 0
-                else:
-                    roe, debt_ratio = 0, 0
-            except Exception:
-                roe, debt_ratio = 0, 0
+            # 提取财务数据
+            eps = float(fin_row["每股收益"]) if pd.notna(fin_row.get("每股收益")) else 0
+            bvps = float(fin_row["每股净资产"]) if pd.notna(fin_row.get("每股净资产")) else 0
+            roe = float(fin_row["净资产收益率"]) if pd.notna(fin_row.get("净资产收益率")) else 0
+            gross_margin = float(fin_row["销售毛利率"]) if pd.notna(fin_row.get("销售毛利率")) else 0
+            net_profit = float(fin_row["净利润-净利润"]) if pd.notna(fin_row.get("净利润-净利润")) else 0
+            revenue = float(fin_row["营业总收入-营业总收入"]) if pd.notna(fin_row.get("营业总收入-营业总收入")) else 0
+            net_margin_pct = round(net_profit / revenue * 100, 1) if revenue else 0
+            net_profit_growth = float(fin_row["净利润-同比增长"]) if pd.notna(fin_row.get("净利润-同比增长")) else 0
+            revenue_growth = float(fin_row["营业总收入-同比增长"]) if pd.notna(fin_row.get("营业总收入-同比增长")) else 0
+            cashflow_per_share = float(fin_row["每股经营现金流量"]) if pd.notna(fin_row.get("每股经营现金流量")) else 0
 
-            # 经营现金流
-            try:
-                cf = ak.stock_financial_report_sina(stock=full_code, symbol="现金流量表")
-                if not cf.empty:
-                    latest_cf = cf.iloc[0]
-                    cashflow = round(float(latest_cf.get("经营活动产生的现金流量净额", 0)) / 1e8, 1)
-                else:
-                    cashflow = 0
-            except Exception:
-                cashflow = 0
-
-            # 净利润增长率 & 营业收入增长率（YoY，取利润表最新两期对比）
-            try:
-                profit_data = ak.stock_financial_report_sina(stock=full_code, symbol="利润表")
-                if profit_data is not None and len(profit_data) >= 2:
-                    latest = profit_data.iloc[0]
-                    prev = profit_data.iloc[1]
-                    net_profit_now = float(latest.get("净利润", 0))
-                    net_profit_prev = float(prev.get("净利润", 0))
-                    revenue_now = float(latest.get("营业收入", 0))
-                    revenue_prev = float(prev.get("营业收入", 0))
-                    net_profit_growth = round((net_profit_now - net_profit_prev) / abs(net_profit_prev) * 100, 1) if net_profit_prev != 0 else 0
-                    revenue_growth = round((revenue_now - revenue_prev) / abs(revenue_prev) * 100, 1) if revenue_prev != 0 else 0
-                else:
-                    net_profit_growth, revenue_growth = 0, 0
-            except Exception:
-                net_profit_growth, revenue_growth = 0, 0
-
-            # PEG 估算
+            # 计算 PE、PB
+            pe = round(price / eps, 2) if eps > 0 else 0
+            pb = round(price / bvps, 2) if bvps > 0 else 0
             peg = round(pe / roe * 100, 2) if roe > 0 and pe > 0 else 0
-
-            # 行业分类（简单映射，后续可优化）
-            industry = "其他"
 
             results.append({
                 "rank": idx,
                 "name": name,
                 "code": full_code,
                 "exchange": exchange,
-                "pe": round(pe, 1),
-                "pb": round(pb, 1),
-                "peg": round(peg, 2),
+                "pe": pe,
+                "pb": pb,
+                "peg": peg,
                 "roe": round(roe, 1),
-                "gross_margin": round(gross_margin_pct, 1),
+                "gross_margin": round(gross_margin, 1),
                 "net_margin": round(net_margin_pct, 1),
-                "debt_ratio": round(debt_ratio, 1),
-                "cashflow": cashflow,
+                "debt_ratio": 0,  # stock_yjbb_em 不含资产负债率
+                "cashflow": round(cashflow_per_share, 1),
                 "net_profit_growth": round(net_profit_growth, 1),
                 "revenue_growth": round(revenue_growth, 1),
                 "industry": industry,
@@ -204,7 +194,7 @@ def fetch_data_real():
             print(f"✅ PE={pe:.1f} ROE={roe:.1f}% 净利润增长={net_profit_growth:.1f}%")
 
             # 避免请求过快被封
-            time.sleep(0.5)
+            time.sleep(0.3)
 
         except Exception as e:
             errors.append(f"{code} {name}: {e}")
