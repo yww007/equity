@@ -184,7 +184,7 @@ def fetch_data_real():
                 "roe": round(roe, 1),
                 "gross_margin": round(gross_margin, 1),
                 "net_margin": round(net_margin_pct, 1),
-                "debt_ratio": 0,  # stock_yjbb_em 不含资产负债率
+                "stock_price": price,  # 最新股价
                 "cashflow": round(cashflow_per_share, 1),
                 "net_profit_growth": round(net_profit_growth, 1),
                 "revenue_growth": round(revenue_growth, 1),
