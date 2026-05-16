@@ -122,6 +122,22 @@ def fetch_data_real():
         print(f"❌ 获取财报失败: {e}")
         return []
 
+    # 先加载上次保存的股价作为兜底（行情接口不可用时使用）
+    fallback_price_map = {}
+    if os.path.exists(OUTPUT_FILE):
+        try:
+            with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+                old_data = json.load(f)
+            for item in (old_data.get("data", old_data) if isinstance(old_data, dict) else old_data):
+                if isinstance(item, dict) and "code" in item and item.get("stock_price", 0) > 0:
+                    # code 格式为 "600519.SH"，提取前6位作为匹配键
+                    code_key = item["code"].split(".")[0]
+                    fallback_price_map[code_key] = item["stock_price"]
+            if fallback_price_map:
+                print(f"📦 已加载 {len(fallback_price_map)} 只股票的上次股价作为兜底")
+        except Exception:
+            pass
+
     # 批量获取所有股票实时行情（新浪接口），建立 code→price 映射
     print("📡 获取实时行情...")
     try:
@@ -133,6 +149,13 @@ def fetch_data_real():
     except Exception as e:
         print(f"❌ 获取实时行情失败: {e}")
         price_map = {}
+
+    # 将兜底价格合并到 price_map（实时行情优先，缺失的用兜底）
+    for code_key, fallback_price in fallback_price_map.items():
+        if code_key not in price_map or price_map[code_key] == 0:
+            price_map[code_key] = fallback_price
+    if fallback_price_map:
+        print(f"📊 最终可用股价数: {len([k for k, v in price_map.items() if v > 0])} 只")
 
     print(f"📡 开始整合 {len(STOCKS)} 只股票的数据...")
     print("-" * 50)
