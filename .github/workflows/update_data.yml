@@ -24,7 +24,7 @@ jobs:
         run: pip install akshare pandas
 
       - name: 抓取数据
-        run: python fetch_stocks.py
+        run: python3 fetch_stocks.py
 
       - name: 提交更新
         run: |
