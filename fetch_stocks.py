@@ -152,7 +152,8 @@ def fetch_data_real():
 
     # 将兜底价格合并到 price_map（实时行情优先，缺失的用兜底）
     for code_key, fallback_price in fallback_price_map.items():
-        if code_key not in price_map or price_map[code_key] == 0:
+        curr = price_map.get(code_key, 0)
+        if curr == 0 or (isinstance(curr, float) and pd.isna(curr)):
             price_map[code_key] = fallback_price
     if fallback_price_map:
         print(f"📊 最终可用股价数: {len([k for k, v in price_map.items() if v > 0])} 只")
