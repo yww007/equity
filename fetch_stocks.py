@@ -305,15 +305,20 @@ def save_data(data):
         except Exception:
             pass
 
-    # 合并去重（按日期去重）
+    # 合并去重（按日期去重，已存在的日期更新 total）
     date_set = {entry["date"] for entry in archive_index if "date" in entry}
-    if today not in date_set:
+    if today in date_set:
+        for entry in archive_index:
+            if entry.get("date") == today:
+                entry["total"] = len(data)
+                break
+    else:
         archive_index.append({
             "date": today,
             "total": len(data),
             "file": f"{today}.json",
         })
-        archive_index.sort(key=lambda x: x["date"], reverse=True)
+    archive_index.sort(key=lambda x: x["date"], reverse=True)
 
     with open(os.path.join(archive_dir, "index.json"), "w", encoding="utf-8") as f:
         json.dump(archive_index, f, ensure_ascii=False, indent=2)
