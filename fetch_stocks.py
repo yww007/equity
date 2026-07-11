@@ -87,15 +87,20 @@ def fetch_data_real():
     errors = []
 
     # 自动选择最新报告期
+    # 注意：财报披露规则：
+    #   Q1(1季报)：4月披露 → 报告期0331
+    #   H1(半年报)：8月披露 → 报告期0630（7月时还未出，用0331代替）
+    #   Q3(3季报)：10月披露 → 报告期0930
+    #   年报：次年4月披露 → 报告期1231
     today = datetime.now()
     y = today.year
     m = today.month
-    if m >= 10:
+    if m >= 11:
         date_str = f"{y}0930"
-    elif m >= 7:
-        date_str = f"{y}0630"
-    elif m >= 4:
-        date_str = f"{y}0331"
+    elif m >= 8:
+        date_str = f"{y}0630"   # 半年报季，8月开始可查
+    elif m >= 5:
+        date_str = f"{y}0331"   # Q1 季报，5月开始可查
     else:
         date_str = f"{y - 1}1231"
 
