@@ -86,23 +86,26 @@ def fetch_data_real():
     results = []
     errors = []
 
-    # 自动选择最新报告期
-    # 注意：财报披露规则：
-    #   Q1(1季报)：4月披露 → 报告期0331
-    #   H1(半年报)：8月披露 → 报告期0630（7月时还未出，用0331代替）
-    #   Q3(3季报)：10月披露 → 报告期0930
-    #   年报：次年4月披露 → 报告期1231
+    # 自动选择最新报告期（按"数据完备度"选，不按"自然时序"选）
+    # 财报披露规则：
+    #   Q1(1季报)：4月披露 → 报告期0331，5月起可用
+    #   H1(半年报)：8月披露 → 报告期0630，**9月**起才基本全部披露（8月通常只有零星公司披露）
+    #   Q3(3季报)：10月披露 → 报告期0930，11月起可用
+    #   年报：次年4月披露 → 报告期1231，5月起可用
+    #
+    # 8月份直接查 20260630 会导致接口只返回零星已披露公司（实测 8-11 仅返回 534 行，
+    # 其中绝大部分是科创板/创业板，沪深 300 大盘股几乎全无）。所以 8 月继续用上年年报。
     today = datetime.now()
     y = today.year
     m = today.month
     if m >= 11:
-        date_str = f"{y}0930"
-    elif m >= 8:
-        date_str = f"{y}0630"   # 半年报季，8月开始可查
+        date_str = f"{y}0930"   # Q3 季报
+    elif m >= 9:
+        date_str = f"{y}0630"   # 半年报：9 月起基本全部披露
     elif m >= 5:
-        date_str = f"{y}0331"   # Q1 季报，5月开始可查
+        date_str = f"{y}0331"   # Q1 季报
     else:
-        date_str = f"{y - 1}1231"
+        date_str = f"{y - 1}1231"   # 年报（1-4 月用上年年报）
 
     print(f"📡 获取最新报告期({date_str})财务数据...")
     print("-" * 50)
@@ -110,18 +113,18 @@ def fetch_data_real():
     # 批量获取所有股票的财报数据（一次请求）
     try:
         yjbb = ak.stock_yjbb_em(date=date_str)
-        # 如果为空则尝试前一报告期
-        if yjbb.empty:
-            fallback = {"10": "0630", "7": "0331", "4": f"{y-1}1231", "1": f"{y-1}0930"}
+        # 如果为空或行数太少（说明选期过早，公司还没披露），尝试回退到上一个已完整披露的报告期
+        if yjbb.empty or len(yjbb) < 1000:
+            # 按月定义上一报告期：10月→Q2半年报; 7月→Q1; 4月→去年年报; 1月→去年Q3
+            # 8月/9月：若半年报数据不全，回退到去年年报（最稳妥的兜底）
+            fallback = {"10": "0331", "9": f"{y-1}1231", "8": f"{y-1}1231",
+                        "7": f"{y-1}1231", "5": f"{y-1}1231", "4": f"{y-2}1231",
+                        "1": f"{y-1}0930"}
             fb_key = str(m)
-            if fb_key in fallback:
-                fb_date = fallback[fb_key]
-            else:
-                fb_date = f"{y-1}1231"
-            if not fb_date.startswith(str(y)):
-                fb_date = f"{y-1}1231"
-            print(f"⚠ 报告期 {date_str} 无数据，尝试 {fb_date}")
+            fb_date = fallback.get(fb_key, f"{y-1}1231")
+            print(f"⚠ 报告期 {date_str} 数据过少（{len(yjbb) if not yjbb.empty else 0} 行），回退到 {fb_date}")
             yjbb = ak.stock_yjbb_em(date=fb_date)
+            date_str = fb_date   # 后续 meta 用回退后的期号
         print(f"✅ 获取到 {len(yjbb)} 只股票的财报数据")
     except Exception as e:
         print(f"❌ 获取财报失败: {e}")
